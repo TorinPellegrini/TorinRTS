@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SPlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "SPlayerPawn.generated.h"
@@ -27,6 +28,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	void GetTerrainPosition(FVector& TerrainPosition) const;
+	
 	UFUNCTION()
 	void Forward(float AxisValue);
 
@@ -54,9 +58,15 @@ protected:
 	UFUNCTION()
 	void RotateVertical(float AxisValue);
 
+	UFUNCTION()
+	void EdgeScroll();
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Camera")
 	float MoveSpeed = 20.f;
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Camera")
+	float EdgeScrollSpeed = 3.f;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Camera")
 	float RotateSpeed = 2.0f;
 
@@ -100,4 +110,24 @@ private:
 	UPROPERTY()
 	bool CanRotate;
 
+
+	/** Mouse Input **/
+protected:
+	UFUNCTION()
+	AActor* GetSelectedObject();
+
+	UFUNCTION()
+	void MouseLeftPressed();
+
+	UFUNCTION()
+	void MouseLeftReleased();
+
+	UFUNCTION()
+	void MouseRightPressed();
+
+	UFUNCTION()
+	void MouseRightReleased();
+
+	UPROPERTY()
+	ASPlayerController* SPlayer;
 };
