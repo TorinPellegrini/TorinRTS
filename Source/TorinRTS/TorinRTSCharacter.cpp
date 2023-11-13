@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "TorinRTSCharacter.h"
+
+#include "CborTypes.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -48,4 +50,29 @@ ATorinRTSCharacter::ATorinRTSCharacter()
 void ATorinRTSCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+}
+
+void ATorinRTSCharacter::Select()
+{
+	Selected = true;
+	Highlight(Selected);
+}
+
+void ATorinRTSCharacter::DeSelect()
+{
+	Selected = false;
+	Highlight(Selected);
+}
+
+void ATorinRTSCharacter::Highlight(const bool Highlight)
+{
+	TArray<UPrimitiveComponent*> Components;
+	GetComponents<UPrimitiveComponent>(Components);
+	for(UPrimitiveComponent* VisualComp : Components)
+	{
+		if(UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(VisualComp))
+		{
+			Prim->SetRenderCustomDepth(Highlight);
+		}
+	}
 }

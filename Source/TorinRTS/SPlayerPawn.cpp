@@ -5,6 +5,8 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "SPlayerController.h"
 
 // Sets default values
 ASPlayerPawn::ASPlayerPawn()
@@ -37,6 +39,9 @@ void ASPlayerPawn::BeginPlay()
 	//Set initial rotation for the camera
 	const FRotator Rotation = SpringArmComponent->GetRelativeRotation();
 	TargetRotation = FRotator(Rotation.Pitch + -50.f, Rotation.Yaw, 0.0f);
+
+	//Player Controller
+	SPlayer = Cast<ASPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	
 }
 
@@ -191,7 +196,26 @@ void ASPlayerPawn::CameraBounds()
 
 AActor* ASPlayerPawn::GetSelectedObject()
 {
-	
+	//Check if we hit a selectable actor
+	if(UWorld* World = GetWorld())
+	{
+		FVector WorldLocation, WorldDirection;
+		SPlayer->DeprojectMousePositionToWorld(WorldLocation, WorldDirection);
+		FVector End = WorldDirection * 1000000.0f + WorldLocation;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+
+		FHitResult Hit;
+		if(World->LineTraceSingleByChannel(Hit, WorldLocation, End, ECC_Visibility, Params))
+		{
+			if(AActor* HitActor = Hit.GetActor())
+			{
+				return HitActor;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void ASPlayerPawn::MouseLeftPressed()
@@ -201,7 +225,10 @@ void ASPlayerPawn::MouseLeftPressed()
 
 void ASPlayerPawn::MouseLeftReleased()
 {
-	
+	if(SPlayer)
+	{
+		SPlayer->Handle_Selection(GetSelectedObject());
+	}
 }
 
 void ASPlayerPawn::MouseRightPressed()

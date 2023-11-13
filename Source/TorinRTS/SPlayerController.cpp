@@ -57,8 +57,17 @@ bool ASPlayerController::ActorSelected(AActor* ActorToCheck) const
 	return false;
 }
 
-void ASPlayerController::Server_DeSelect_Implementation(AActor* ActorToSelect)
+void ASPlayerController::Server_DeSelect_Implementation(AActor* ActorToDeSelect)
 {
+	if(ActorToDeSelect)
+	{
+		if(ISelectable* Selectable = Cast<ISelectable>(ActorToDeSelect))
+		{
+			Selectable->DeSelect();
+			Selected.Remove(ActorToDeSelect);
+			OnRep_Selected();
+		}
+	}
 	
 }
 
@@ -72,12 +81,25 @@ void ASPlayerController::Server_Select_Implementation(AActor* ActorToSelect)
 		{
 			Selectable->Select();
 			Selected.Add(ActorToSelect);
+			OnRep_Selected();
 		}
 	}
 }
 
 void ASPlayerController::Server_ClearSelected_Implementation()
 {
+	for(int i=0;i<Selected.Num(); ++i)
+	{
+		if(Selected[i])
+		{
+			if(ISelectable* Selectable = Cast<ISelectable>(Selected[i]))
+			{
+				Selectable->DeSelect();
+			}
+		}
+	}
+
+	Selected.Empty();
 }
 
 void ASPlayerController::OnRep_Selected()
