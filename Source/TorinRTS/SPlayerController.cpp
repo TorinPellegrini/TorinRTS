@@ -37,6 +37,26 @@ void ASPlayerController::Handle_Selection(AActor* ActorToSelect)
 	}
 }
 
+void ASPlayerController::Handle_Selection(TArray<AActor*> ActorsToSelect)
+{
+	Server_Select_Group(ActorsToSelect);
+}
+
+FVector ASPlayerController::GetMousePositionOnTerrain() const
+{
+	FVector WorldLocation, WorldDirection;
+	DeprojectMousePositionToWorld(WorldLocation, WorldDirection);
+	FHitResult OutHit;
+	if(GetWorld()->LineTraceSingleByChannel(OutHit,WorldLocation,WorldLocation+(WorldDirection*100000.f),ECollisionChannel::ECC_GameTraceChannel1))
+	{
+		if(OutHit.bBlockingHit)
+		{
+			return OutHit.Location;
+		}
+	}
+	return FVector::ZeroVector;
+}
+
 void ASPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -55,6 +75,33 @@ bool ASPlayerController::ActorSelected(AActor* ActorToCheck) const
 	}
 
 	return false;
+}
+
+void ASPlayerController::Server_Select_Group_Implementation(const TArray<AActor*>& ActorsToSelect)
+{
+	Server_ClearSelected();
+	
+	TArray<AActor*> ValidActors;
+	for(int i=0; i < ActorsToSelect.Num(); ++i)
+	{
+		if(ActorsToSelect[i])
+		{
+			if(ISelectable* Selectable = Cast<ISelectable>(ActorsToSelect[i]))
+			{
+				ValidActors.Add(ActorsToSelect[i]);
+				Selectable->Select();
+			}
+		}
+	}
+
+	for(int j = 0; j < ValidActors.Num(); ++j)
+	{
+		Selected.Append(ValidActors);
+		OnRep_Selected();
+	}
+
+	ValidActors.Empty();
+	
 }
 
 void ASPlayerController::Server_DeSelect_Implementation(AActor* ActorToDeSelect)

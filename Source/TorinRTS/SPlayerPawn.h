@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SelectionBox.h"
 #include "SPlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "SPlayerPawn.generated.h"
 
+
+class ASelectionBox;
 class UCameraComponent;
 UCLASS()
 class TORINRTS_API ASPlayerPawn : public APawn
@@ -120,6 +123,9 @@ protected:
 	void MouseLeftPressed();
 
 	UFUNCTION()
+	void LeftMouseInputHeld(float AxisValue);
+
+	UFUNCTION()
 	void MouseLeftReleased();
 
 	UFUNCTION()
@@ -128,6 +134,25 @@ protected:
 	UFUNCTION()
 	void MouseRightReleased();
 
+	UFUNCTION()
+	void CreateSelectionBox();
+
 	UPROPERTY()
 	ASPlayerController* SPlayer;
+	
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Mouse")
+	float LeftMouseHoldThreshold = 0.15f;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Mouse")
+	TSubclassOf<ASelectionBox> SelectionBoxClass;
+
+	UPROPERTY()
+	ASelectionBox* SelectionBox;
+
+	UPROPERTY()
+	bool BoxSelect;
+
+	UPROPERTY()
+	FVector LeftMouseHitLocation;
+	
 };

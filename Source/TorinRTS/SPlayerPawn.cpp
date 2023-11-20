@@ -220,14 +220,49 @@ AActor* ASPlayerPawn::GetSelectedObject()
 
 void ASPlayerPawn::MouseLeftPressed()
 {
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	SPlayer->Handle_Selection(nullptr);
+	BoxSelect = false;
+	LeftMouseHitLocation = SPlayer->GetMousePositionOnTerrain();
 	
+}
+
+void ASPlayerPawn::LeftMouseInputHeld(float AxisValue)
+{
+	if(!SPlayer || AxisValue == 0.f)
+	{
+		return;
+	}
+
+	if(SPlayer->GetInputKeyTimeDown(EKeys::LeftMouseButton)>=LeftMouseHoldThreshold)
+	{
+		if(!BoxSelect && SelectionBox)
+		{
+			SelectionBox->Start(LeftMouseHitLocation, TargetRotation);
+			BoxSelect = true;
+		}
+	}
 }
 
 void ASPlayerPawn::MouseLeftReleased()
 {
 	if(SPlayer)
 	{
-		SPlayer->Handle_Selection(GetSelectedObject());
+		//Check for active box selection
+		if(BoxSelect && SelectionBox)
+		{
+			SelectionBox->End();
+			BoxSelect = false;
+		}
+		else
+		{
+			SPlayer->Handle_Selection(GetSelectedObject());
+		}
+		
 	}
 }
 
@@ -237,6 +272,11 @@ void ASPlayerPawn::MouseRightPressed()
 }
 
 void ASPlayerPawn::MouseRightReleased()
+{
+	
+}
+
+void ASPlayerPawn::CreateSelectionBox()
 {
 	
 }
@@ -274,6 +314,8 @@ void ASPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAxis(TEXT("Zoom"), this, &ASPlayerPawn::Zoom);
 	PlayerInputComponent->BindAxis(TEXT("RotateHorizontal"), this, &ASPlayerPawn::RotateHorizontal);
 	PlayerInputComponent->BindAxis(TEXT("RotateVertical"), this, &ASPlayerPawn::RotateVertical);
+
+	PlayerInputComponent->BindAxis(TEXT("MouseLeft"), this, &ASPlayerPawn::LeftMouseInputHeld);
 
 	PlayerInputComponent->BindAction(TEXT("RotateRight"), IE_Pressed, this, &ASPlayerPawn::RotateRight);
 	PlayerInputComponent->BindAction(TEXT("RotateLeft"), IE_Pressed, this, &ASPlayerPawn::RotateLeft);
