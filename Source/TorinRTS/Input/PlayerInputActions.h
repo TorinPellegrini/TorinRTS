@@ -22,7 +22,7 @@ class TORINRTS_API UPlayerInputActions : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	/** Defualt Player Mapping Context */
+	/** Default Player Mapping Context */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	UInputMappingContext* MappingContextDefault;
 
@@ -43,6 +43,22 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	UInputAction* Rotate;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
+	UInputAction* TestPlacement;
+
+	/** Placement Player Mapping Context */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Placement")
+	UInputMappingContext* MappingContextPlacement;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Placement")
+	int32 MapPriorityPlacement;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Placement")
+	UInputAction* Place;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Placement")
+	UInputAction* PlaceCancel;
 	
 };
 
