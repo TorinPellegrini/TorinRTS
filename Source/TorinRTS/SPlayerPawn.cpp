@@ -2,11 +2,14 @@
 
 
 #include "SPlayerPawn.h"
+
+#include "EngineUtils.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "SPlayerController.h"
+#include "TorinRTSCharacter.h"
 
 // Sets default values
 ASPlayerPawn::ASPlayerPawn()
@@ -94,11 +97,30 @@ void ASPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	{
 		if(const UPlayerInputActions* PlayerActions = Cast<UPlayerInputActions>(PlayerController->GetInputActionsAsset()))
 		{
+			//Default controls
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Move, this, &ASPlayerPawn::Move);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Look, this, &ASPlayerPawn::Look);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Zoom, this, &ASPlayerPawn::Zoom);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Rotate, this, &ASPlayerPawn::Rotate);
 			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->Select, this, &ASPlayerPawn::Select, &ASPlayerPawn::SelectHold, &ASPlayerPawn::SelectEnd);
+			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->TestPlacement, this, &ASPlayerPawn::TestPlacement);
+			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->SelectDoubleTap, this, &ASPlayerPawn::SelectDoubleTap);
+			
+			//Placement controls
+			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Place, this, &ASPlayerPawn::Place);
+			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->PlaceCancel, this, &ASPlayerPawn::PlaceCancel);
+
+			//Shift
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Shift, this, &ASPlayerPawn::Shift, &ASPlayerPawn::Shift);
+			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->ShiftSelect, this, &ASPlayerPawn::ShiftSelect);
+
+			//Alt
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Alt, this, &ASPlayerPawn::Alt, &ASPlayerPawn::Alt);
+			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->AltSelect, this, &ASPlayerPawn::AltSelect, &ASPlayerPawn::SelectHold, &ASPlayerPawn::AltSelectEnd);
+
+			//Ctrl
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Ctrl, this, &ASPlayerPawn::Ctrl, &ASPlayerPawn::Ctrl);
+			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->CtrlSelect, this, &ASPlayerPawn::CtrlSelect, &ASPlayerPawn::SelectHold, &ASPlayerPawn::CtrlSelectEnd);
 		}
 	}
 }
@@ -313,6 +335,200 @@ void ASPlayerPawn::Zoom(const FInputActionValue& Value)
 	if(ensure(Value.GetValueType() == EInputActionValueType::Axis1D))
 	{
 		TargetZoom = FMath::Clamp(TargetZoom + (Value.Get<float>() * ZoomSpeed), MinZoom, MaxZoom);
+	}
+}
+
+void ASPlayerPawn::TestPlacement(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	SPlayer->SetPlacementPreview();
+}
+
+void ASPlayerPawn::SelectDoubleTap(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	if(AActor* Selection = GetSelectedObject())
+	{
+		if(ATorinRTSCharacter* SelectedCharacter = Cast<ATorinRTSCharacter>(Selection))
+		{
+			SPlayer->Handle_DeSelection(SelectedCharacter);
+			SelectedCharacter->Destroy();
+		}
+	}
+}
+
+void ASPlayerPawn::Shift(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Shift Successful"), Value.Get<bool>() ? TEXT("On") : TEXT("Off"));
+	SPlayer->SetInputShift(Value.Get<bool>());
+}
+
+void ASPlayerPawn::Alt(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Alt Successful"), Value.Get<bool>() ? TEXT("On") : TEXT("Off"));
+	SPlayer->SetInputAlt(Value.Get<bool>());
+}
+
+void ASPlayerPawn::Ctrl(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Ctrl Successful"), Value.Get<bool>() ? TEXT("On") : TEXT("Off"));
+	SPlayer->SetInputCtrl(Value.Get<bool>());
+}
+
+void ASPlayerPawn::ShiftSelect(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	//Get selection under cursor
+	if(AActor* Selection = GetSelectedObject())
+	{
+		//Get selection class
+		const TSubclassOf<AActor> SelectionClass = Selection->GetClass();
+
+		TArray<AActor*> Actors;
+		Actors.Add(Selection);
+
+		for(TActorIterator<AActor> ActorIterator(GetWorld(), SelectionClass); ActorIterator; ++ActorIterator)
+		{
+			AActor* Actor = *ActorIterator;
+			const float DistanceSquared = FVector::DistSquared(Actor->GetActorLocation(), SelectHitLocation);
+			if(DistanceSquared <= FMath::Square(1000.f))
+			{
+				Actors.AddUnique(Actor);
+			}
+		}
+
+		SPlayer->Handle_Selection(Actors);
+	}
+	else
+	{
+		SPlayer->Handle_Selection(nullptr);
+	}
+}
+
+void ASPlayerPawn::AltSelect(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	//Reset box select
+	BoxSelect = false;
+
+	//Store initial hit location
+	SelectHitLocation = SPlayer->GetMousePositionOnTerrain();
+}
+
+void ASPlayerPawn::AltSelectEnd(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	//Check if there is an active box selection
+	if(BoxSelect && SelectionBox)
+	{
+		//Use box for selection
+		SelectionBox->End(false);
+
+		//Reset box
+		BoxSelect = false;
+	}
+	else
+	{
+		//If no box select, perform single
+		SPlayer->Handle_DeSelection(GetSelectedObject());
+	}
+}
+
+void ASPlayerPawn::CtrlSelect(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	//Reset box select
+	BoxSelect = false;
+
+	//Store initial hit location
+	SelectHitLocation = SPlayer->GetMousePositionOnTerrain();
+}
+
+void ASPlayerPawn::CtrlSelectEnd(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	//Check if there is an active box selection
+	if(BoxSelect && SelectionBox)
+	{
+		//Use box for selection
+		SelectionBox->End(true, true);
+
+		//Reset box
+		BoxSelect = false;
+	}
+	else
+	{
+		//If no box select, perform single
+		if(AActor* Selection = GetSelectedObject())
+		{
+			SPlayer->Handle_Selection(Selection);
+		}
+	}
+	
+}
+
+void ASPlayerPawn::Place(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	if(SPlayer->IsPlacementModeEnabled())
+	{
+		SPlayer->Place();
+	}
+	
+}
+
+void ASPlayerPawn::PlaceCancel(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+	if(SPlayer->IsPlacementModeEnabled())
+	{
+		SPlayer->PlaceCancel();
 	}
 }
 

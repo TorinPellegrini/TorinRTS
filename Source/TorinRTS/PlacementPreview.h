@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "PlacementPreview.generated.h"
 
+class ATorinRTSCharacter;
 UCLASS()
 class TORINRTS_API APlacementPreview : public AActor
 {
@@ -22,6 +23,14 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+private:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* SceneComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* StaticMesh;
+		
 
 public:	
 	// Called every frame

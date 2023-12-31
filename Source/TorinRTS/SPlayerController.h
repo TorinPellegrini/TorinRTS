@@ -27,7 +27,16 @@ public:
 	void Handle_Selection(TArray<AActor*> ActorsToSelect);
 
 	UFUNCTION()
+	void Handle_DeSelection(AActor* ActorToSelect);
+	void Handle_DeSelection(TArray<AActor*> ActorsToSelect);
+
+	UFUNCTION()
 	FVector GetMousePositionOnTerrain() const;
+
+	UFUNCTION()
+	FVector GetMousePositionOnSurface() const;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -42,7 +51,10 @@ protected:
 	void Server_Select_Group(const TArray<AActor*>& ActorsToSelect);
 
 	UFUNCTION(Server, Reliable)
-	void Server_DeSelect(AActor* ActorToSelect);
+	void Server_DeSelect(AActor* ActorToDeSelect);
+
+	UFUNCTION(Server, Reliable)
+	void Server_DeSelect_Group(const TArray<AActor*>& ActorsToDeSelect);
 
 	UFUNCTION(Server, Reliable)
 	void Server_ClearSelected();
@@ -68,6 +80,18 @@ public:
 	void SetInputDefault(const bool Enabled = true) const;
 
 	UFUNCTION()
+	void SetInputPlacement(const bool Enabled = true) const;
+
+	UFUNCTION()
+	void SetInputShift(const bool Enabled = true) const;
+
+	UFUNCTION()
+	void SetInputAlt(const bool Enabled = true) const;
+
+	UFUNCTION()
+	void SetInputCtrl(const bool Enabled = true) const;
+
+	UFUNCTION()
 	UDataAsset* GetInputActionsAsset() const { return PlayerActionsAsset; }
 
 protected:
@@ -75,4 +99,37 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Player Settings")
 	UDataAsset* PlayerActionsAsset;
+
+	//Placement
+public:
+	UFUNCTION()
+	bool IsPlacementModeEnabled() const { return bPlacementModeEnabled; }
+
+	UFUNCTION()
+	void SetPlacementPreview();
+
+	UFUNCTION()
+	void Place();
+
+	UFUNCTION()
+	void PlaceCancel();
+
+protected:
+	UFUNCTION()
+	void PlacementUpdate() const;
+	
+	UFUNCTION(Server, Reliable)
+	void Server_Place(AActor* PlacementPreviewToSpawn);
+
+	UFUNCTION(Client, Reliable)
+	void EndPlacement();
+	
+	UPROPERTY()
+	bool bPlacementModeEnabled;
+
+	UPROPERTY()
+	AActor* PlacementPreviewActor;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Placeable")
+	TSubclassOf<AActor> PreviewActorType;
 };

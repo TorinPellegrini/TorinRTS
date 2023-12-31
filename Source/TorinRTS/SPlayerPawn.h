@@ -133,4 +133,45 @@ protected:
 
 	UFUNCTION()
 	void Zoom(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void TestPlacement(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void SelectDoubleTap(const FInputActionValue& Value);
+	
+	//Placement Controls
+	UFUNCTION()
+	void Place(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void PlaceCancel(const FInputActionValue& Value);
+
+	//Modifier Keys
+	UFUNCTION()
+	void Shift(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void Alt(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void Ctrl(const FInputActionValue& Value);
+	
+	//Shift
+	UFUNCTION()
+	void ShiftSelect(const FInputActionValue& Value);
+
+	//Alt
+	UFUNCTION()
+	void AltSelect(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void AltSelectEnd(const FInputActionValue& Value);
+
+	//Ctrl
+	UFUNCTION()
+	void CtrlSelect(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void CtrlSelectEnd(const FInputActionValue& Value);
 };

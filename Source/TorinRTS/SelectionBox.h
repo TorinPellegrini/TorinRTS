@@ -24,7 +24,7 @@ public:
 	void Start(FVector Position, const FRotator Rotation);
 
 	UFUNCTION()
-	void End();
+	void End(const bool bSelect = true, const bool bAddOnly = false);
 
 protected:
 	// Called when the game starts or when spawned

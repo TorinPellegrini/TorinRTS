@@ -6,12 +6,14 @@
 #include <Windows.UI.Input.h>
 
 #include "EnhancedInputSubsystems.h"
+#include "PlacementPreview.h"
 #include "Selectable.h"
 #include "Net/UnrealNetwork.h"
 
 
 ASPlayerController::ASPlayerController(const FObjectInitializer& ObjectInitializer)
 {
+	bPlacementModeEnabled = false;
 }
 
 void ASPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -45,6 +47,19 @@ void ASPlayerController::Handle_Selection(TArray<AActor*> ActorsToSelect)
 	Server_Select_Group(ActorsToSelect);
 }
 
+void ASPlayerController::Handle_DeSelection(AActor* ActorToSelect)
+{
+	if(ActorToSelect && ActorSelected(ActorToSelect))
+	{
+		Server_DeSelect(ActorToSelect);
+	}
+}
+
+void ASPlayerController::Handle_DeSelection(TArray<AActor*> ActorsToSelect)
+{
+	Server_DeSelect_Group(ActorsToSelect);
+}
+
 FVector ASPlayerController::GetMousePositionOnTerrain() const
 {
 	FVector WorldLocation, WorldDirection;
@@ -58,6 +73,31 @@ FVector ASPlayerController::GetMousePositionOnTerrain() const
 		}
 	}
 	return FVector::ZeroVector;
+}
+
+FVector ASPlayerController::GetMousePositionOnSurface() const
+{
+	FVector WorldLocation, WorldDirection;
+	DeprojectMousePositionToWorld(WorldLocation, WorldDirection);
+	FHitResult OutHit;
+	if(GetWorld()->LineTraceSingleByChannel(OutHit,WorldLocation,WorldLocation+(WorldDirection*100000.f),ECollisionChannel::ECC_Visibility))
+	{
+		if(OutHit.bBlockingHit)
+		{
+			return OutHit.Location;
+		}
+	}
+	return FVector::ZeroVector;
+}
+
+void ASPlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if(bPlacementModeEnabled && PlacementPreviewActor)
+	{
+		PlacementUpdate();
+	}
 }
 
 void ASPlayerController::BeginPlay()
@@ -120,8 +160,6 @@ void ASPlayerController::Server_DeSelect_Implementation(AActor* ActorToDeSelect)
 
 void ASPlayerController::Server_Select_Implementation(AActor* ActorToSelect)
 {
-	Server_ClearSelected();
-
 	if(ActorToSelect)
 	{
 		if(ISelectable* Selectable = Cast<ISelectable>(ActorToSelect))
@@ -147,6 +185,30 @@ void ASPlayerController::Server_ClearSelected_Implementation()
 	}
 
 	Selected.Empty();
+}
+
+void ASPlayerController::Server_DeSelect_Group_Implementation(const TArray<AActor*>& ActorsToDeSelect)
+{
+	for(int i = 0; i < ActorsToDeSelect.Num(); i++)
+	{
+		if(ActorsToDeSelect[i])
+		{
+			for(int j = Selected.Num() - 1; j >= 0; j--)
+			{
+				if(ActorsToDeSelect[i] == Selected[j])
+				{
+					if(ISelectable* Selectable = Cast<ISelectable>(ActorsToDeSelect[i]))
+					{
+						Selectable->DeSelect();
+						Selected.RemoveAt(j);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	OnRep_Selected();
 }
 
 void ASPlayerController::OnRep_Selected()
@@ -196,6 +258,80 @@ void ASPlayerController::SetInputDefault(const bool Enabled) const
 	}
 }
 
+void ASPlayerController::SetInputPlacement(const bool Enabled) const
+{
+	ensureMsgf(PlayerActionsAsset, TEXT("PlayerActionsAsset is Null!"));
+	
+	if(const UPlayerInputActions* PlayerActions = Cast<UPlayerInputActions>(PlayerActionsAsset))
+	{
+		ensure(PlayerActions->MappingContextPlacement);
+		if(Enabled)
+		{
+			AddInputMapping(PlayerActions->MappingContextPlacement, PlayerActions->MapPriorityPlacement);
+			SetInputDefault(!Enabled);
+		}
+		else
+		{
+			RemoveInputMapping(PlayerActions->MappingContextPlacement);
+			SetInputDefault();
+		}
+	}
+}
+
+void ASPlayerController::SetInputShift(const bool Enabled) const
+{
+	ensureMsgf(PlayerActionsAsset, TEXT("PlayerActionsAsset is Null!"));
+
+	if(const UPlayerInputActions* PlayerActions = Cast<UPlayerInputActions>(PlayerActionsAsset))
+	{
+		ensure(PlayerActions->MappingContextShift);
+		if(Enabled)
+		{
+			AddInputMapping(PlayerActions->MappingContextShift, PlayerActions->MapPriorityShift);
+		}
+		else
+		{
+			RemoveInputMapping(PlayerActions->MappingContextShift);
+		}
+	}
+}
+
+void ASPlayerController::SetInputAlt(const bool Enabled) const
+{
+	ensureMsgf(PlayerActionsAsset, TEXT("PlayerActionsAsset is Null!"));
+
+	if(const UPlayerInputActions* PlayerActions = Cast<UPlayerInputActions>(PlayerActionsAsset))
+	{
+		ensure(PlayerActions->MappingContextAlt);
+		if(Enabled)
+		{
+			AddInputMapping(PlayerActions->MappingContextAlt, PlayerActions->MapPriorityAlt);
+		}
+		else
+		{
+			RemoveInputMapping(PlayerActions->MappingContextAlt);
+		}
+	}
+}
+
+void ASPlayerController::SetInputCtrl(const bool Enabled) const
+{
+	ensureMsgf(PlayerActionsAsset, TEXT("PlayerActionsAsset is Null!"));
+
+	if(const UPlayerInputActions* PlayerActions = Cast<UPlayerInputActions>(PlayerActionsAsset))
+	{
+		ensure(PlayerActions->MappingContextCtrl);
+		if(Enabled)
+		{
+			AddInputMapping(PlayerActions->MappingContextCtrl, PlayerActions->MapPriorityCtrl);
+		}
+		else
+		{
+			RemoveInputMapping(PlayerActions->MappingContextCtrl);
+		}
+	}
+}
+
 void ASPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -205,4 +341,93 @@ void ASPlayerController::SetupInputComponent()
 		InputSubsystem->ClearAllMappings();
 		SetInputDefault();
 	}
+}
+
+void ASPlayerController::SetPlacementPreview()
+{
+	if(PreviewActorType && !bPlacementModeEnabled)
+	{
+		FTransform SpawnTransform;
+		SpawnTransform.SetLocation(GetMousePositionOnSurface());
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		PlacementPreviewActor = GetWorld()->SpawnActor<APlacementPreview>(PreviewActorType, SpawnTransform, SpawnParameters);
+
+		if(PlacementPreviewActor)
+		{
+			//Placement input enable
+			SetInputPlacement();
+
+			//Placement mode
+			bPlacementModeEnabled = true;
+		}
+	}
+}
+
+void ASPlayerController::Place()
+{
+	if(!IsPlacementModeEnabled() || !PlacementPreviewActor)
+	{
+		return;
+	}
+
+	//Disable placing
+	bPlacementModeEnabled = false;
+
+	//Disable placement controls
+	SetInputPlacement(false);
+
+	//Send to server (if multiplayer is implemented)
+	Server_Place(PlacementPreviewActor);
+}
+
+void ASPlayerController::PlaceCancel()
+{
+	if(!IsPlacementModeEnabled() || !PlacementPreviewActor)
+	{
+		return;
+	}
+
+	//Disable placement mode
+	bPlacementModeEnabled = false;
+
+	//Disable placement input
+	SetInputPlacement(false);
+
+	EndPlacement();
+}
+
+void ASPlayerController::PlacementUpdate() const
+{
+	if(!PlacementPreviewActor)
+	{
+		return;
+	}
+
+	PlacementPreviewActor->SetActorLocation(GetMousePositionOnSurface());
+}
+
+void ASPlayerController::Server_Place_Implementation(AActor* PlacementPreviewToSpawn)
+{
+	if(const APlacementPreview* Preview = Cast<APlacementPreview>(PlacementPreviewToSpawn))
+	{
+		FTransform SpawnTransform;
+		FVector Location = Preview->GetActorLocation();
+		SpawnTransform.SetLocation(FVector(Location.X, Location.Y, Location.Z + 100.f));
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if(ATorinRTSCharacter* NewUnit = GetWorld()->SpawnActor<ATorinRTSCharacter>(Preview->PlaceableClass, SpawnTransform, SpawnParameters))
+		{
+			NewUnit->SetOwner(this);
+		}
+	}
+
+	EndPlacement();
+}
+
+void ASPlayerController::EndPlacement_Implementation()
+{
+	PlacementPreviewActor->Destroy();
 }
