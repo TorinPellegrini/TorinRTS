@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AIData.h"
 #include "InputActionValue.h"
 #include "SelectionBox.h"
 #include "SPlayerController.h"
@@ -112,6 +113,16 @@ protected:
 	UPROPERTY()
 	FVector SelectHitLocation;
 
+	/** Command Functions **/
+	
+	UPROPERTY()
+	FVector CommandLocation;
+
+	UFUNCTION()
+	FCommandData CreateCommandData(const ECommandType Type) const;
+	
+	/** End Command Functions**/
+
 	/** Enhanced Input **/
 	UFUNCTION()
 	void Move(const FInputActionValue& Value);
@@ -139,6 +150,12 @@ protected:
 
 	UFUNCTION()
 	void SelectDoubleTap(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void CommandStart(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void Command(const FInputActionValue& Value);
 	
 	//Placement Controls
 	UFUNCTION()
@@ -161,6 +178,9 @@ protected:
 	UFUNCTION()
 	void ShiftSelect(const FInputActionValue& Value);
 
+	UFUNCTION()
+	void ShiftCommand(const FInputActionValue& Value);
+
 	//Alt
 	UFUNCTION()
 	void AltSelect(const FInputActionValue& Value);
@@ -168,9 +188,15 @@ protected:
 	UFUNCTION()
 	void AltSelectEnd(const FInputActionValue& Value);
 
+	UFUNCTION()
+	void AltCommand(const FInputActionValue& Value);
+
 	//Ctrl
 	UFUNCTION()
 	void CtrlSelect(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void CtrlCommand(const FInputActionValue& Value);
 
 	UFUNCTION()
 	void CtrlSelectEnd(const FInputActionValue& Value);

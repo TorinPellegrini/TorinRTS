@@ -12,6 +12,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
+#include "Kismet/KismetMathLibrary.h"
 
 ATorinRTSCharacter::ATorinRTSCharacter()
 {
@@ -24,10 +25,15 @@ ATorinRTSCharacter::ATorinRTSCharacter()
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
-	GetCharacterMovement()->bConstrainToPlane = true;
-	GetCharacterMovement()->bSnapToPlaneAtStart = true;
+	CharacterMovementComponent = GetCharacterMovement();
+	if(CharacterMovementComponent)
+	{
+		CharacterMovementComponent->bOrientRotationToMovement = true; // Rotate character to moving direction
+		CharacterMovementComponent->RotationRate = FRotator(0.f, 640.f, 0.f);
+		CharacterMovementComponent->bConstrainToPlane = true;
+		CharacterMovementComponent->bSnapToPlaneAtStart = true;
+		MaxSpeed = CharacterMovementComponent->MaxWalkSpeed;
+	}
 
 	// Create a camera boom...
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -45,11 +51,23 @@ ATorinRTSCharacter::ATorinRTSCharacter()
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
 void ATorinRTSCharacter::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+
+	if(ShouldOrientate)
+	{
+		SetOrientation(DeltaSeconds);
+
+		if(IsOriented())
+		{
+			ShouldOrientate = 0;
+		}
+	}
 }
 
 void ATorinRTSCharacter::Select()
@@ -75,4 +93,93 @@ void ATorinRTSCharacter::Highlight(const bool Highlight)
 			Prim->SetRenderCustomDepth(Highlight);
 		}
 	}
+}
+
+void ATorinRTSCharacter::CommandMoveToLocation(const FCommandData CommandData)
+{
+	switch (CommandData.Type)
+	{
+	case ECommandType::CommandMoveSlow:
+		{
+			SetWalk();
+			break;
+		}
+	case ECommandType::CommandMoveFast:
+		{
+			SetSprint();
+			break;
+		}
+	case ECommandType::CommandMoveAttack:
+		{
+			
+		}
+	default:
+		{
+			SetRun();
+		}
+	}
+
+	//Request AI Move
+	CommandMove(CommandData);
+}
+
+void ATorinRTSCharacter::CommandMove(const FCommandData CommandData)
+{
+	//Clear delegate to remove current move in progress
+	if(!SAIController)
+	{
+		return;
+	}
+	SAIController->OnReachedDestination.Clear();
+
+	SAIController->OnReachedDestination.AddDynamic(this, &ATorinRTSCharacter::DestinationReached);
+	
+	SAIController->CommandMove(CommandData);
+}
+
+void ATorinRTSCharacter::DestinationReached(const FCommandData CommandData)
+{
+	TargetOrientation = CommandData.Rotation;
+	ShouldOrientate = 1;
+}
+
+void ATorinRTSCharacter::SetWalk() const
+{
+	if(CharacterMovementComponent)
+	{
+		CharacterMovementComponent->MaxWalkSpeed = MaxSpeed * 0.5f;
+	}
+}
+
+void ATorinRTSCharacter::SetRun() const
+{
+	if(CharacterMovementComponent)
+	{
+		CharacterMovementComponent->MaxWalkSpeed = MaxSpeed;
+	}
+}
+
+void ATorinRTSCharacter::SetSprint() const
+{
+	if(CharacterMovementComponent)
+	{
+		CharacterMovementComponent->MaxWalkSpeed = MaxSpeed * 1.25f;
+	}
+}
+
+void ATorinRTSCharacter::SetOrientation(const float DeltaTime)
+{
+	const FRotator InterpolatedRotation = UKismetMathLibrary::RInterpTo(FRotator(GetActorRotation().Pitch, GetActorRotation().Yaw, 0.f), TargetOrientation, DeltaTime, 2.f);
+	SetActorRotation(InterpolatedRotation);
+}
+
+bool ATorinRTSCharacter::IsOriented() const
+{
+	const FRotator CurrentRotation = GetActorRotation();
+	if(FMath::IsNearlyEqual(CurrentRotation.Yaw, TargetOrientation.Yaw, 0.25f))
+	{
+		return true;
+	}
+
+	return false;
 }

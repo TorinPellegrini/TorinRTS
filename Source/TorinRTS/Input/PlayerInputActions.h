@@ -50,6 +50,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 	UInputAction* SelectDoubleTap;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
+	UInputAction* Command;
+
 	/** Modifiers **/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Modifier")
 	UInputAction* Shift;
@@ -84,6 +87,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
 	UInputAction* ShiftSelect;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Shift")
+	UInputAction* ShiftCommand;
+
 	
 	/** Alt Mapping */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Alt")
@@ -94,6 +100,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Alt")
 	UInputAction* AltSelect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Alt")
+	UInputAction* AltCommand;
 	
 	/** Ctrl Mapping */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ctrl")
@@ -104,6 +113,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ctrl")
 	UInputAction* CtrlSelect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ctrl")
+	UInputAction* CtrlCommand;
 	
 };
 

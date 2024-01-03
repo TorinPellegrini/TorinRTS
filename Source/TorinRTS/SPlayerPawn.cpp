@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "SPlayerController.h"
 #include "TorinRTSCharacter.h"
+#include "VectorTypes.h"
 
 // Sets default values
 ASPlayerPawn::ASPlayerPawn()
@@ -105,6 +106,7 @@ void ASPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->Select, this, &ASPlayerPawn::Select, &ASPlayerPawn::SelectHold, &ASPlayerPawn::SelectEnd);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->TestPlacement, this, &ASPlayerPawn::TestPlacement);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->SelectDoubleTap, this, &ASPlayerPawn::SelectDoubleTap);
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Command, this, &ASPlayerPawn::CommandStart, &ASPlayerPawn::Command);
 			
 			//Placement controls
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->Place, this, &ASPlayerPawn::Place);
@@ -113,14 +115,18 @@ void ASPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			//Shift
 			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Shift, this, &ASPlayerPawn::Shift, &ASPlayerPawn::Shift);
 			EPlayerInputActions::BindInput_TriggerOnly(Input, PlayerActions->ShiftSelect, this, &ASPlayerPawn::ShiftSelect);
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->ShiftCommand, this, &ASPlayerPawn::CommandStart, &ASPlayerPawn::ShiftCommand);
+
 
 			//Alt
 			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Alt, this, &ASPlayerPawn::Alt, &ASPlayerPawn::Alt);
 			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->AltSelect, this, &ASPlayerPawn::AltSelect, &ASPlayerPawn::SelectHold, &ASPlayerPawn::AltSelectEnd);
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->AltCommand, this, &ASPlayerPawn::CommandStart, &ASPlayerPawn::AltCommand);
 
 			//Ctrl
 			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->Ctrl, this, &ASPlayerPawn::Ctrl, &ASPlayerPawn::Ctrl);
 			EPlayerInputActions::BindInput_StartTriggerComplete(Input, PlayerActions->CtrlSelect, this, &ASPlayerPawn::CtrlSelect, &ASPlayerPawn::SelectHold, &ASPlayerPawn::CtrlSelectEnd);
+			EPlayerInputActions::BindInput_Simple(Input, PlayerActions->CtrlCommand, this, &ASPlayerPawn::CommandStart, &ASPlayerPawn::CtrlCommand);
 		}
 	}
 }
@@ -239,6 +245,30 @@ void ASPlayerPawn::CreateSelectionBox()
 			SelectionBox->SetOwner(this);
 		}
 	}
+}
+
+FCommandData ASPlayerPawn::CreateCommandData(const ECommandType Type) const
+{
+	if(!SPlayer)
+	{
+		return FCommandData();
+	}
+	
+	FRotator CommandRotation = FRotator::ZeroRotator;
+	const FVector CommandEndLocation = SPlayer->GetMousePositionOnTerrain();
+
+	//Check that mouse was dragged, if not, leave rotation at 0
+	if((CommandEndLocation - CommandLocation).Length() > 100.f)
+	{
+		//Calculate rotation angle
+		const FVector Direction = CommandEndLocation - CommandLocation;
+		const float RotationAngle = FMath::RadiansToDegrees(FMath::Atan2(Direction.Y, Direction.X));
+
+		//Convert angle to rotation
+		CommandRotation = FRotator(0.f, RotationAngle, 0.f);
+	}
+
+	return FCommandData(CommandLocation, CommandRotation, Type);
 }
 
 void ASPlayerPawn::Move(const FInputActionValue& Value)
@@ -364,6 +394,26 @@ void ASPlayerPawn::SelectDoubleTap(const FInputActionValue& Value)
 	}
 }
 
+void ASPlayerPawn::CommandStart(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	CommandLocation = SPlayer->GetMousePositionOnTerrain();
+}
+
+void ASPlayerPawn::Command(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	SPlayer->CommandSelected(CreateCommandData(ECommandType::CommandMove));
+}
+
 void ASPlayerPawn::Shift(const FInputActionValue& Value)
 {
 	if(!SPlayer)
@@ -431,6 +481,16 @@ void ASPlayerPawn::ShiftSelect(const FInputActionValue& Value)
 	}
 }
 
+void ASPlayerPawn::ShiftCommand(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	SPlayer->CommandSelected(CreateCommandData(ECommandType::CommandMoveFast));
+}
+
 void ASPlayerPawn::AltSelect(const FInputActionValue& Value)
 {
 	if(!SPlayer)
@@ -468,6 +528,16 @@ void ASPlayerPawn::AltSelectEnd(const FInputActionValue& Value)
 	}
 }
 
+void ASPlayerPawn::AltCommand(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	SPlayer->CommandSelected(CreateCommandData(ECommandType::CommandMoveSlow));
+}
+
 void ASPlayerPawn::CtrlSelect(const FInputActionValue& Value)
 {
 	if(!SPlayer)
@@ -479,6 +549,16 @@ void ASPlayerPawn::CtrlSelect(const FInputActionValue& Value)
 
 	//Store initial hit location
 	SelectHitLocation = SPlayer->GetMousePositionOnTerrain();
+}
+
+void ASPlayerPawn::CtrlCommand(const FInputActionValue& Value)
+{
+	if(!SPlayer)
+	{
+		return;
+	}
+
+	SPlayer->CommandSelected(CreateCommandData(ECommandType::CommandMoveAttack));
 }
 
 void ASPlayerPawn::CtrlSelectEnd(const FInputActionValue& Value)

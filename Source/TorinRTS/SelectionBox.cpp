@@ -152,7 +152,7 @@ void ASelectionBox::Manage()
 			&& LocalActorCenter.Z >= -LocalExtents.Z && LocalActorCenter.Z <= LocalExtents.Z)
 		{
 			//Add unit to center is in selection box list
-			if(CenterInBox.Contains(InBox[i]))
+			if(!CenterInBox.Contains(InBox[i]))
 			{
 				CenterInBox.Add(InBox[i]);
 				HandleHighlight(InBox[i], true);

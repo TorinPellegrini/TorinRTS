@@ -5,6 +5,7 @@
 
 #include <Windows.UI.Input.h>
 
+#include "AIData.h"
 #include "EnhancedInputSubsystems.h"
 #include "PlacementPreview.h"
 #include "Selectable.h"
@@ -217,6 +218,27 @@ void ASPlayerController::OnRep_Selected()
 }
 
 /** Enhanced Input **/
+
+void ASPlayerController::CommandSelected(FCommandData CommandData)
+{
+	Server_CommandSelected(CommandData);
+}
+
+void ASPlayerController::Server_CommandSelected_Implementation(FCommandData CommandData)
+{
+	if(!HasAuthority())
+	{
+		return;
+	}
+
+	for(int i = 0; i < Selected.Num(); i++)
+	{
+		if(ATorinRTSCharacter* SelectedCharacter = Cast<ATorinRTSCharacter>(Selected[i]))
+		{
+			SelectedCharacter->CommandMoveToLocation(CommandData);
+		}
+	}
+}
 
 void ASPlayerController::AddInputMapping(const UInputMappingContext* InputMapping, const int32 MappingPriority) const
 {

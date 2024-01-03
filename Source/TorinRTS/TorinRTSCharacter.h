@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AIData.h"
 #include "Selectable.h"
+#include "AI/SAIController.h"
 #include "GameFramework/Character.h"
 #include "TorinRTSCharacter.generated.h"
+
 
 UCLASS(Blueprintable)
 class ATorinRTSCharacter : public ACharacter, public ISelectable
@@ -41,5 +44,52 @@ public:
 
 	UPROPERTY()
 	bool Selected;
+
+	/**Command Functions **/
+public:
+	UFUNCTION()
+	void CommandMoveToLocation(const FCommandData CommandData);
+
+	UFUNCTION()
+	void SetAIController(ASAIController* NewAIController) { SAIController = NewAIController; }
+
+protected:
+	UFUNCTION()
+	void CommandMove(const FCommandData CommandData);
+
+	UFUNCTION()
+	void DestinationReached(const FCommandData CommandData);
+
+	UFUNCTION()
+	void SetWalk() const;
+
+	UFUNCTION()
+	void SetRun() const;
+
+	UFUNCTION()
+	void SetSprint() const;
+
+	UFUNCTION()
+	void SetOrientation(const float DeltaTime);
+
+	UFUNCTION()
+	bool IsOriented() const;
+
+	UPROPERTY()
+	UCharacterMovementComponent* CharacterMovementComponent;
+
+	UPROPERTY()
+	float MaxSpeed;
+	
+	UPROPERTY()
+	FRotator TargetOrientation;
+
+	UPROPERTY()
+	uint8 ShouldOrientate;
+
+	UPROPERTY()
+	ASAIController* SAIController;
+	
+	/** End Command Functions **/
 };
 
