@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "AIData.h"
+#include "Data/FormationDataAsset.h"
 #include "GameFramework/PlayerController.h"
-#include "Input/PlayerInputActions.h"
 #include "Input/PlayerInputActions.h"
 #include "SPlayerController.generated.h"
 
+class UHudWidget;
+class UInputMappingContext;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSelectedUpdatedDelegate);
 
 /**
@@ -88,11 +90,29 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_CommandSelected(FCommandData CommandData);
 
+	UFUNCTION()
+	void CreateFormationData();
+
+	UFUNCTION()
+	void OnFormationDataLoaded(TArray<FPrimaryAssetId> Formations);
+
+	UFUNCTION()
+	UFormationDataAsset* GetFormationData();
+
+	UFUNCTION()
+	void CalculateOffset(const int Index, FCommandData& CommandData);
+	
 	UPROPERTY()
 	TEnumAsByte<EFormation> CurrentFormation;
 
 	UPROPERTY()
 	float FormationSpacing;
+
+	UPROPERTY()
+	UAssetManager* AssetManager;
+
+	UPROPERTY()
+	TArray<UFormationDataAsset*> FormationData;
 
 	
 	/**End Command Functions**/
@@ -163,4 +183,17 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|Placeable")
 	TSubclassOf<AActor> PreviewActorType;
+
+	/** UI **/
+public:
+	UFUNCTION()
+	void CreateHUD();
+
+protected:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings|UI")
+	TSubclassOf<UUserWidget> HudClass;
+
+	UPROPERTY()
+	UHudWidget* HUD;
+	
 };

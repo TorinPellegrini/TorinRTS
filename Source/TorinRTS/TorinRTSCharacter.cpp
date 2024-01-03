@@ -70,6 +70,37 @@ void ATorinRTSCharacter::Tick(float DeltaSeconds)
 	}
 }
 
+FTransform ATorinRTSCharacter::GetPositionTransform(const FVector Position) const
+{
+	FHitResult Hit;
+	FCollisionQueryParams CollisionParams;
+	FVector TraceOrigin = Position;
+	TraceOrigin.Z += 10000.f;
+	FVector TraceEnd = Position;
+	TraceEnd.Z = 10000.f;
+
+	if(UWorld* WorldContext = GetWorld())
+	{
+		if(WorldContext->LineTraceSingleByChannel(Hit, TraceOrigin, TraceEnd, ECC_GameTraceChannel1, CollisionParams))
+		{
+			if(Hit.bBlockingHit)
+			{
+				FTransform HitTransform;
+
+				HitTransform.SetLocation(Hit.ImpactPoint + FVector(1.f, 1.f, 1.25f));
+
+				FRotator TerrainRotation = UKismetMathLibrary::MakeRotFromZX(Hit.Normal, FVector::UpVector);
+				TerrainRotation += FRotator(90.f, 0.f, 0.f);
+				HitTransform.SetRotation(TerrainRotation.Quaternion());
+				
+				return HitTransform;
+			}
+		}
+	}
+
+	return FTransform::Identity;
+}
+
 void ATorinRTSCharacter::Select()
 {
 	Selected = true;
@@ -135,10 +166,15 @@ void ATorinRTSCharacter::CommandMove(const FCommandData CommandData)
 	SAIController->OnReachedDestination.AddDynamic(this, &ATorinRTSCharacter::DestinationReached);
 	
 	SAIController->CommandMove(CommandData);
+	SetMoveMarker(CommandData.Location);
 }
 
 void ATorinRTSCharacter::DestinationReached(const FCommandData CommandData)
 {
+	if(MoveMarker)
+	{
+		MoveMarker->Destroy();
+	}
 	TargetOrientation = CommandData.Rotation;
 	ShouldOrientate = 1;
 }
@@ -182,4 +218,24 @@ bool ATorinRTSCharacter::IsOriented() const
 	}
 
 	return false;
+}
+
+void ATorinRTSCharacter::SetMoveMarker(const FVector Location)
+{
+	if(MoveMarkerClass)
+	{
+		if(MoveMarker)
+		{
+			MoveMarker->Destroy();
+		}
+
+		FActorSpawnParameters Params;
+		Params.Instigator = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if(UWorld* WorldContext = GetWorld())
+		{
+			MoveMarker = WorldContext->SpawnActor<AActor>(MoveMarkerClass, GetPositionTransform(Location), Params);
+		}
+	}
 }

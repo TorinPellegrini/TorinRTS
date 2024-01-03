@@ -25,6 +25,9 @@ public:
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+protected:
+	UFUNCTION()
+	FTransform GetPositionTransform(const FVector Position) const;
 
 private:
 	/** Top down camera */
@@ -75,6 +78,9 @@ protected:
 	UFUNCTION()
 	bool IsOriented() const;
 
+	UFUNCTION()
+	void SetMoveMarker(const FVector Location);
+
 	UPROPERTY()
 	UCharacterMovementComponent* CharacterMovementComponent;
 
@@ -89,6 +95,13 @@ protected:
 
 	UPROPERTY()
 	ASAIController* SAIController;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "AI Settings")
+	TSubclassOf<AActor> MoveMarkerClass;
+
+	UPROPERTY()
+	AActor* MoveMarker;
+	
 	
 	/** End Command Functions **/
 };

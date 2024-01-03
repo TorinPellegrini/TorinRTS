@@ -38,7 +38,7 @@ public:
 	FButtonClicked OnButtonClicked;
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
-	FButtonClicked OnButtonHovered;
+	FButtonHovered OnButtonHovered;
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FButtonUnHovered OnButtonUnHovered;

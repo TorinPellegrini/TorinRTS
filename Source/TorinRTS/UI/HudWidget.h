@@ -13,7 +13,7 @@ class UFormationSelectorWidget;
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class TORINRTS_API UHudWidget : public UUserWidget
 {
 	GENERATED_BODY()

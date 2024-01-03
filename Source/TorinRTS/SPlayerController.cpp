@@ -9,7 +9,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "PlacementPreview.h"
 #include "Selectable.h"
+#include "Data/FormationDataAsset.h"
+#include "Engine/AssetManager.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/HudWidget.h"
 
 
 ASPlayerController::ASPlayerController(const FObjectInitializer& ObjectInitializer)
@@ -105,10 +108,17 @@ void ASPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	verify((AssetManager = UAssetManager::GetIfValid()) != nullptr);
+
 	FInputModeGameAndUI InputMode;
 	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;
+	//Create formation data
+	CreateFormationData();
+	
+	//Create HUD
+	CreateHUD();
 }
 
 bool ASPlayerController::ActorSelected(AActor* ActorToCheck) const
@@ -190,11 +200,11 @@ void ASPlayerController::Server_ClearSelected_Implementation()
 
 void ASPlayerController::Server_DeSelect_Group_Implementation(const TArray<AActor*>& ActorsToDeSelect)
 {
-	for(int i = 0; i < ActorsToDeSelect.Num(); i++)
+	for(int i = 0; i < ActorsToDeSelect.Num(); ++i)
 	{
 		if(ActorsToDeSelect[i])
 		{
-			for(int j = Selected.Num() - 1; j >= 0; j--)
+			for(int j = Selected.Num() - 1; j >= 0; --j)
 			{
 				if(ActorsToDeSelect[i] == Selected[j])
 				{
@@ -227,11 +237,119 @@ void ASPlayerController::CommandSelected(FCommandData CommandData)
 void ASPlayerController::UpdateFormation(const EFormation Formation)
 {
 	CurrentFormation = Formation;
+
+	if(HasGroupSelection() && Selected.IsValidIndex(0))
+	{
+		CommandSelected(FCommandData(Selected[0]->GetActorLocation(), Selected[0]->GetActorRotation(), CommandMove));
+	}
 }
 
 void ASPlayerController::UpdateSpacing(const float UpdatedSpacing)
 {
 	FormationSpacing = UpdatedSpacing;
+
+	if(HasGroupSelection() && Selected.IsValidIndex(0))
+	{
+		CommandSelected(FCommandData(Selected[0]->GetActorLocation(), Selected[0]->GetActorRotation(), CommandMove));
+	}
+}
+
+void ASPlayerController::CreateFormationData()
+{
+	const FPrimaryAssetType AssetType("Formation Data");
+	TArray<FPrimaryAssetId> Formations;
+	AssetManager->GetPrimaryAssetIdList(AssetType, Formations);
+
+	if(Formations.Num() > 0)
+	{
+		const TArray<FName> Bundles;
+		const FStreamableDelegate FormationDataLoadedDelegate = FStreamableDelegate::CreateUObject(this, &ASPlayerController::OnFormationDataLoaded, Formations);
+		AssetManager->LoadPrimaryAssets(Formations, Bundles, FormationDataLoadedDelegate);
+	}
+}
+
+void ASPlayerController::OnFormationDataLoaded(TArray<FPrimaryAssetId> Formations)
+{
+	for(int i = 0; i <Formations.Num(); ++i)
+	{
+		if(UFormationDataAsset* FormationDataAsset = Cast<UFormationDataAsset>(AssetManager->GetPrimaryAssetObject(Formations[i])))
+		{
+			FormationData.Add(FormationDataAsset);
+		}
+	}
+}
+
+UFormationDataAsset* ASPlayerController::GetFormationData()
+{
+	for(int i = 0; i<FormationData.Num(); ++i)
+	{
+		if(FormationData[i]->FormationType == CurrentFormation)
+		{
+			return FormationData[i];
+		}
+	}
+
+	return nullptr;
+}
+
+void ASPlayerController::CalculateOffset(const int Index, FCommandData& CommandData)
+{
+	if(FormationData.Num() <= 0)
+	{
+		return;
+	}
+
+	if(const UFormationDataAsset* CurrentFormationData = GetFormationData())
+	{
+		FVector Offset = CurrentFormationData->Offset;
+
+		switch (CurrentFormationData->FormationType)
+		{
+			case EFormation::Blob:
+			{
+				if(Index != 0)
+				{
+					//Distribute characters evenly around circle
+					float Angle = (Index / static_cast<float>(Selected.Num())) * 2 * PI;
+
+					//Add random range to circle
+					float MinSpacing = FormationSpacing * 0.5f;
+					if(Index % 2 == 0)
+					{
+						MinSpacing = MinSpacing * -1;
+					}
+					const float Radius = FMath::RandRange(MinSpacing, FormationSpacing);
+
+					Offset.X = Radius * FMath::Cos(Angle);
+					Offset.Y = Radius * FMath::Sin(Angle);
+				}
+				break;
+			}
+			default:
+			{
+				if(CurrentFormationData->Alternate)
+				{
+					//Alternate side the position will be on
+					if(Index % 2 == 0)
+					{
+						//even
+						Offset.Y = Offset.Y * -1;
+					}
+
+					//Allow two positions on each row, using the alternate position
+					Offset *= (FMath::Floor((Index + 1)/2)) * FormationSpacing;
+				}
+				else
+				{
+					//Calculate normal offset
+					Offset *= Index * FormationSpacing;
+				}
+			}
+		}
+
+		Offset = CommandData.Rotation.RotateVector(Offset);
+		CommandData.Location = CommandData.SourceLocation + Offset;
+	}
 }
 
 void ASPlayerController::Server_CommandSelected_Implementation(FCommandData CommandData)
@@ -241,10 +359,11 @@ void ASPlayerController::Server_CommandSelected_Implementation(FCommandData Comm
 		return;
 	}
 
-	for(int i = 0; i < Selected.Num(); i++)
+	for(int i = 0; i < Selected.Num(); ++i)
 	{
 		if(ATorinRTSCharacter* SelectedCharacter = Cast<ATorinRTSCharacter>(Selected[i]))
 		{
+			CalculateOffset(i, CommandData);
 			SelectedCharacter->CommandMoveToLocation(CommandData);
 		}
 	}
@@ -438,6 +557,18 @@ void ASPlayerController::PlacementUpdate() const
 	}
 
 	PlacementPreviewActor->SetActorLocation(GetMousePositionOnSurface());
+}
+
+void ASPlayerController::CreateHUD()
+{
+	if(HudClass)
+	{
+		HUD = CreateWidget<UHudWidget>(GetWorld(), HudClass);
+		if(HUD != nullptr)
+		{
+			HUD->AddToViewport();
+		}
+	}
 }
 
 void ASPlayerController::Server_Place_Implementation(AActor* PlacementPreviewToSpawn)
