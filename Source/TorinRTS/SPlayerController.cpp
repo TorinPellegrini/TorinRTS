@@ -224,6 +224,16 @@ void ASPlayerController::CommandSelected(FCommandData CommandData)
 	Server_CommandSelected(CommandData);
 }
 
+void ASPlayerController::UpdateFormation(const EFormation Formation)
+{
+	CurrentFormation = Formation;
+}
+
+void ASPlayerController::UpdateSpacing(const float UpdatedSpacing)
+{
+	FormationSpacing = UpdatedSpacing;
+}
+
 void ASPlayerController::Server_CommandSelected_Implementation(FCommandData CommandData)
 {
 	if(!HasAuthority())

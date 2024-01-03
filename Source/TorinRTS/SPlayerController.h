@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AIData.h"
 #include "GameFramework/PlayerController.h"
 #include "Input/PlayerInputActions.h"
 #include "Input/PlayerInputActions.h"
@@ -38,6 +39,12 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	UFUNCTION()
+	bool HasGroupSelection() const { return Selected.Num() > 1; }
+	
+	UPROPERTY()
+	FSelectedUpdatedDelegate OnSelectedUpdated;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -65,17 +72,27 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Selected)
 	TArray<AActor*> Selected;
 
-	UPROPERTY()
-	FSelectedUpdatedDelegate OnSelectedUpdated;
 
 	/**Command Functions**/
 public:
 	UFUNCTION()
 	void CommandSelected(FCommandData CommandData);
 
+	UFUNCTION()
+	void UpdateFormation(const EFormation Formation);
+
+	UFUNCTION()
+	void UpdateSpacing(const float FormationSpacing);
+
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_CommandSelected(FCommandData CommandData);
+
+	UPROPERTY()
+	TEnumAsByte<EFormation> CurrentFormation;
+
+	UPROPERTY()
+	float FormationSpacing;
 
 	
 	/**End Command Functions**/
