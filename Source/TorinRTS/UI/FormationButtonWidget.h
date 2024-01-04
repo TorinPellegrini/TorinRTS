@@ -19,5 +19,4 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Settings")
 	TEnumAsByte<EFormation> Formation;
-	
 };

@@ -3,12 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "FormationButtonWidget.h"
 #include "Blueprint/UserWidget.h"
-#include "TorinRTS/SPlayerController.h"
 #include "FormationSelectorWidget.generated.h"
 
 class USlider;
+class UFormationButtonWidget;
+class USimpleUIButtonWidget;
+class ASPlayerController;
 /**
  * 
  */

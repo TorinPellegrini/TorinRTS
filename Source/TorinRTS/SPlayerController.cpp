@@ -12,6 +12,7 @@
 #include "Data/FormationDataAsset.h"
 #include "Engine/AssetManager.h"
 #include "Net/UnrealNetwork.h"
+#include "Blueprint/UserWidget.h"
 #include "UI/HudWidget.h"
 
 
@@ -244,9 +245,9 @@ void ASPlayerController::UpdateFormation(const EFormation Formation)
 	}
 }
 
-void ASPlayerController::UpdateSpacing(const float UpdatedSpacing)
+void ASPlayerController::UpdateSpacing(const float NewSpacing)
 {
-	FormationSpacing = UpdatedSpacing;
+	FormationSpacing = NewSpacing;
 
 	if(HasGroupSelection() && Selected.IsValidIndex(0))
 	{
@@ -256,7 +257,7 @@ void ASPlayerController::UpdateSpacing(const float UpdatedSpacing)
 
 void ASPlayerController::CreateFormationData()
 {
-	const FPrimaryAssetType AssetType("Formation Data");
+	const FPrimaryAssetType AssetType("FormationData");
 	TArray<FPrimaryAssetId> Formations;
 	AssetManager->GetPrimaryAssetIdList(AssetType, Formations);
 
@@ -270,7 +271,7 @@ void ASPlayerController::CreateFormationData()
 
 void ASPlayerController::OnFormationDataLoaded(TArray<FPrimaryAssetId> Formations)
 {
-	for(int i = 0; i <Formations.Num(); ++i)
+	for(int i = 0; i < Formations.Num(); ++i)
 	{
 		if(UFormationDataAsset* FormationDataAsset = Cast<UFormationDataAsset>(AssetManager->GetPrimaryAssetObject(Formations[i])))
 		{
@@ -281,7 +282,7 @@ void ASPlayerController::OnFormationDataLoaded(TArray<FPrimaryAssetId> Formation
 
 UFormationDataAsset* ASPlayerController::GetFormationData()
 {
-	for(int i = 0; i<FormationData.Num(); ++i)
+	for(int i = 0; i < FormationData.Num(); ++i)
 	{
 		if(FormationData[i]->FormationType == CurrentFormation)
 		{

@@ -4,6 +4,7 @@
 #include "SelectionBox.h"
 
 #include "Selectable.h"
+#include "SPlayerController.h"
 #include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"

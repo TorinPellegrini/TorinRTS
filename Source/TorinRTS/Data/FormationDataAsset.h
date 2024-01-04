@@ -28,6 +28,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 	TEnumAsByte<EFormation> FormationType;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DIsplay")
+	FText DisplayName;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 	FVector Offset;
 

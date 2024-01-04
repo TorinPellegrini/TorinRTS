@@ -3,8 +3,10 @@
 
 #include "FormationSelectorWidget.h"
 
+#include "FormationButtonWidget.h"
 #include "Components/Slider.h"
 #include "Kismet/GameplayStatics.h"
+#include "TorinRTS/SPlayerController.h"
 
 void UFormationSelectorWidget::NativeOnInitialized()
 {

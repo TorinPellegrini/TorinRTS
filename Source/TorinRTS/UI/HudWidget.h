@@ -3,12 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "FormationSelectorWidget.h"
 #include "Blueprint/UserWidget.h"
-#include "TorinRTS/SPlayerController.h"
 #include "HudWidget.generated.h"
 
 class UFormationSelectorWidget;
+class ASPlayerController;
 
 /**
  * 
@@ -22,7 +21,7 @@ public:
 	virtual void NativeOnInitialized() override;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	UFormationSelectorWidget* FormationSelectorWidget;
+	UFormationSelectorWidget* FormationSelectionWidget;
 
 protected:
 	UFUNCTION()

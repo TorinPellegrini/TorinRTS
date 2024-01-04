@@ -13,6 +13,7 @@ void UFormationButtonWidget::NativePreConstruct()
 
 	if(ButtonIndex)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ButtonText: %s"), *UEnum::GetDisplayValueAsText(Formation).ToString());
 		ButtonText->SetText(UEnum::GetDisplayValueAsText(Formation));
 	}
 }

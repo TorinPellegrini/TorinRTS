@@ -6,9 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "EnhancedInputComponent.h"
-#include "InputAction.h"
 #include "Engine/DataAsset.h"
-#include "Evaluation/IMovieSceneEvaluationHook.h"
 #include "PlayerInputActions.generated.h"
 
 class UInputAction;

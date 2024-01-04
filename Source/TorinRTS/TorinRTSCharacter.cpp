@@ -3,6 +3,7 @@
 #include "TorinRTSCharacter.h"
 
 #include "CborTypes.h"
+#include "AI/SAIController.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -77,7 +78,7 @@ FTransform ATorinRTSCharacter::GetPositionTransform(const FVector Position) cons
 	FVector TraceOrigin = Position;
 	TraceOrigin.Z += 10000.f;
 	FVector TraceEnd = Position;
-	TraceEnd.Z = 10000.f;
+	TraceEnd.Z -= 10000.f;
 
 	if(UWorld* WorldContext = GetWorld())
 	{

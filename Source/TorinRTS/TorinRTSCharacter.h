@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "AIData.h"
 #include "Selectable.h"
-#include "AI/SAIController.h"
 #include "GameFramework/Character.h"
 #include "TorinRTSCharacter.generated.h"
 
+class ASAIController;
 
 UCLASS(Blueprintable)
 class ATorinRTSCharacter : public ACharacter, public ISelectable
@@ -101,7 +101,6 @@ protected:
 
 	UPROPERTY()
 	AActor* MoveMarker;
-	
 	
 	/** End Command Functions **/
 };

@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "AIData.h"
-#include "Data/FormationDataAsset.h"
 #include "GameFramework/PlayerController.h"
 #include "Input/PlayerInputActions.h"
 #include "SPlayerController.generated.h"
 
 class UHudWidget;
 class UInputMappingContext;
+class UAssetManager;
+class UFormationDataAsset;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSelectedUpdatedDelegate);
 
 /**
@@ -84,7 +85,7 @@ public:
 	void UpdateFormation(const EFormation Formation);
 
 	UFUNCTION()
-	void UpdateSpacing(const float FormationSpacing);
+	void UpdateSpacing(const float NewSpacing);
 
 protected:
 	UFUNCTION(Server, Reliable)

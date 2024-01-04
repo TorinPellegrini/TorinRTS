@@ -3,7 +3,9 @@
 
 #include "HudWidget.h"
 
+#include "FormationSelectorWidget.h"
 #include "Kismet/GameplayStatics.h"
+#include "TorinRTS/SPlayerController.h"
 
 void UHudWidget::NativeOnInitialized()
 {
@@ -24,9 +26,9 @@ void UHudWidget::NativeOnInitialized()
 
 void UHudWidget::SetFormationSelectionWidget(const bool bEnabled) const
 {
-	if(FormationSelectorWidget)
+	if(FormationSelectionWidget)
 	{
-		FormationSelectorWidget->SetVisibility(bEnabled ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+		FormationSelectionWidget->SetVisibility(bEnabled ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 }
 

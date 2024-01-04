@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SPlayerController.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/Actor.h"
 #include "SelectionBox.generated.h"
+
+class ASPlayerController;
+
 
 UCLASS()
 class TORINRTS_API ASelectionBox : public AActor
