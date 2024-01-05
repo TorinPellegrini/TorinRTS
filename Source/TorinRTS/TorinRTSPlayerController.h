@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
 #include "GameFramework/PlayerController.h"
-#include "InputActionValue.h"
 #include "TorinRTSPlayerController.generated.h"
 
 /** Forward declaration to improve compiling times */

@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
 	TEnumAsByte<EFormation> FormationType;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DIsplay")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Display")
 	FText DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")

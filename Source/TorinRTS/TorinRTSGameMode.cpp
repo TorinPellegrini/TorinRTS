@@ -2,7 +2,6 @@
 
 #include "TorinRTSGameMode.h"
 #include "TorinRTSPlayerController.h"
-#include "TorinRTSCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 ATorinRTSGameMode::ATorinRTSGameMode()
